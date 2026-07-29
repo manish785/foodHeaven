@@ -26,7 +26,14 @@ const confirmPaymentSchema = Joi.object({
   provider: Joi.string().trim().max(80).optional(),
 });
 
+const updateOrderStatusSchema = Joi.object({
+  status: Joi.string()
+    .valid("ACCEPTED", "PREPARING", "READY", "PICKED_UP", "OUT_FOR_DELIVERY", "DELIVERED")
+    .required(),
+});
+
 module.exports = {
   createOrderSchema,
   confirmPaymentSchema,
+  updateOrderStatusSchema,
 };

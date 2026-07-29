@@ -1,16 +1,62 @@
-import { useEffect } from "react";
-import { useLocation, useNavigate, Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
+
+import PageLoader from "../../../components/ui/PageLoader";
+import { getOrderDetails } from "../../../services/ordersApi";
+
+const field = (object, camel, snake) => object?.[camel] ?? object?.[snake];
 
 const PaymentConfirm = () => {
-  const navigate = useNavigate();
   const location = useLocation();
-  const orderNumber = location?.state?.orderNumber;
-  const totalAmount = location?.state?.totalAmount;
+  const [searchParams] = useSearchParams();
+  const orderId = location?.state?.orderId || searchParams.get("orderId");
+  const [order, setOrder] = useState(null);
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(Boolean(orderId));
+
+  const orderNumber =
+    location?.state?.orderNumber ||
+    field(order, "orderNumber", "order_number");
+  const totalAmount =
+    location?.state?.totalAmount ??
+    field(order, "totalAmount", "total_amount");
 
   useEffect(() => {
-    const timer = setTimeout(() => navigate("/"), 4000);
-    return () => clearTimeout(timer);
-  }, [navigate]);
+    if (!orderId) {
+      setIsLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadOrder() {
+      setIsLoading(true);
+      setError("");
+      try {
+        const details = await getOrderDetails(orderId);
+        if (!cancelled) setOrder(details);
+      } catch (requestError) {
+        if (!cancelled) {
+          setError(
+            requestError?.response?.data?.message ||
+              "Unable to load order confirmation."
+          );
+        }
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    }
+
+    loadOrder();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [orderId]);
+
+  if (isLoading) {
+    return <PageLoader label="Loading confirmation..." />;
+  }
 
   return (
     <div className="page-shell flex items-center justify-center py-16">
@@ -26,22 +72,36 @@ const PaymentConfirm = () => {
           Your food is on the way. Thanks for ordering with FoodHeaven.
         </p>
 
+        {error && (
+          <p className="mt-4 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            {error}
+          </p>
+        )}
+
         {orderNumber && (
           <p className="mt-6 rounded-xl bg-ink-50 px-4 py-3 text-sm font-medium text-ink-700">
             Order ID: <span className="text-brand-600">{orderNumber}</span>
           </p>
         )}
-        {totalAmount && (
+        {totalAmount != null && (
           <p className="mt-2 text-lg font-bold text-ink-900">
-            Paid ₹{totalAmount}
+            Paid ₹{Number(totalAmount).toFixed(2)}
           </p>
         )}
 
-        <p className="mt-6 text-xs text-ink-400">Redirecting to home in a few seconds...</p>
-
-        <Link to="/" className="btn-primary mt-6 inline-flex">
-          Back to home
-        </Link>
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
+          {orderId && (
+            <Link to={`/orders/${orderId}`} className="btn-primary inline-flex">
+              Track order
+            </Link>
+          )}
+          <Link to="/orders" className="btn-secondary inline-flex">
+            View all orders
+          </Link>
+          <Link to="/" className="btn-secondary inline-flex">
+            Back to home
+          </Link>
+        </div>
       </div>
     </div>
   );

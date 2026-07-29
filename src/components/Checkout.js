@@ -1,8 +1,9 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate, Link } from "react-router-dom";
 import toast from "react-hot-toast";
 
+import { useAuth } from "../context/AuthContext";
 import { Address } from "../redux/CartPage/action";
 import appStore from "../utils/appStore";
 import { persistCart } from "../utils/cartStorage";
@@ -16,11 +17,23 @@ const Checkout = () => {
 
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { user, isAuthenticated, isLoading } = useAuth();
+
+  useEffect(() => {
+    if (isLoading) return;
+
+    if (name.current && user?.name && !name.current.value) {
+      name.current.value = user.name;
+    }
+    if (email.current && user?.email && !email.current.value) {
+      email.current.value = user.email;
+    }
+  }, [isLoading, user]);
 
   const handleSubmit = () => {
     const addressData = {
       name: name.current.value.trim(),
-      email: email.current.value.trim(),
+      email: (user?.email || email.current.value).trim(),
       number: number.current.value.trim(),
       address: address.current.value.trim(),
       pincode: pincode.current.value.trim(),
@@ -34,6 +47,14 @@ const Checkout = () => {
       !addressData.pincode
     ) {
       toast.error("Please fill all delivery fields");
+      return;
+    }
+
+    if (!isAuthenticated) {
+      dispatch(Address(addressData));
+      persistCart(appStore.getState().cart);
+      toast.error("Please log in to continue to payment");
+      navigate("/login", { state: { returnTo: "/payment" } });
       return;
     }
 
@@ -69,18 +90,27 @@ const Checkout = () => {
               Where should we deliver your order?
             </p>
 
+            {!isLoading && !isAuthenticated && (
+              <p className="mt-4 rounded-xl bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+                You will need to sign in before payment.
+              </p>
+            )}
+
             <div className="mt-8 space-y-4">
               <input
                 ref={name}
                 type="text"
                 placeholder="Full name"
+                defaultValue={user?.name || ""}
                 className="input-field !border-ink-700 !bg-ink-800/50 !text-white placeholder:text-ink-500"
               />
               <input
                 ref={email}
                 type="email"
                 placeholder="Email address"
-                className="input-field !border-ink-700 !bg-ink-800/50 !text-white placeholder:text-ink-500"
+                defaultValue={user?.email || ""}
+                readOnly={Boolean(user?.email)}
+                className="input-field !border-ink-700 !bg-ink-800/50 !text-white placeholder:text-ink-500 read-only:opacity-70"
               />
               <input
                 ref={number}

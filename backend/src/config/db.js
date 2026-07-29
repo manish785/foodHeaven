@@ -1,3 +1,23 @@
+/**
+ * Shared database connection pool (MySQL or PostgreSQL).
+ *
+ * Why this file exists:
+ * - Every layer (repositories, init-db, migrate, server startup) needs one pool instance.
+ * - Production deploys (e.g. Render) use Postgres via `DATABASE_URL`; local dev uses MySQL
+ *   via `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`.
+ *
+ * Design:
+ * - Exports a single pool object with a consistent API: `query`, `getConnection`, `end`.
+ * - Postgres path wraps `pg` and translates MySQL-style `?` placeholders to `$1, $2, ...`
+ *   so repositories can write one SQL dialect.
+ * - `pool.isPostgres` lets callers branch when engine-specific syntax is required
+ *   (see `migrate.js`, `init-db.js`).
+ *
+ * Env vars:
+ * - `DATABASE_URL` — if it starts with `postgres`, uses PostgreSQL (SSL enabled).
+ * - Otherwise MySQL from `DATABASE_URL` or individual `DB_*` variables.
+ */
+
 const mysql = require("mysql2/promise");
 
 const databaseUrl = process.env.DATABASE_URL || "";
@@ -10,14 +30,20 @@ if (isPostgres) {
 
   const pgPool = new Pool({
     connectionString: databaseUrl,
+    // Required for managed Postgres hosts (Render, Heroku, etc.)
     ssl: { rejectUnauthorized: false },
   });
 
+  /**
+   * Rewrites MySQL-style `?` placeholders to Postgres `$1`, `$2`, …
+   * Lets repositories use `?` everywhere without duplicating queries.
+   */
   function toPgSql(sql) {
     let index = 0;
     return sql.replace(/\?/g, () => `$${++index}`);
   }
 
+  // Adapter that mirrors mysql2's pool API ([rows, fields] from query)
   pool = {
     isPostgres: true,
     async query(sql, params = []) {
@@ -50,6 +76,7 @@ if (isPostgres) {
     },
   };
 } else {
+  // Local dev: either a MySQL connection string or discrete DB_* env vars
   const mysqlPool = databaseUrl
     ? mysql.createPool(databaseUrl)
     : mysql.createPool({

@@ -1,3 +1,39 @@
+/*
+|--------------------------------------------------------------------------
+| Header Component
+|--------------------------------------------------------------------------
+|
+| Purpose
+| -------
+| The Header is the application's global navigation bar.
+|
+| Responsibilities
+| ----------------
+| • Display the application logo.
+| • Render navigation links.
+| • Show current cart item count.
+| • Display user's authentication state.
+| • Handle Login / Logout.
+| • Show Online / Offline status.
+| • Render responsive mobile navigation.
+| • Display toast notifications.
+| • Prevent background scrolling while mobile menu is open.
+|
+| Architecture
+|
+|                Header
+|                   │
+|        ┌──────────┼───────────┐
+|        ▼          ▼           ▼
+|      Logo      Navigation   User Actions
+|                                 │
+|                     ┌───────────┼────────────┐
+|                     ▼           ▼            ▼
+|                  Cart       Authentication  Mobile Menu
+|
+|--------------------------------------------------------------------------
+*/
+
 import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
@@ -7,9 +43,22 @@ import { useAuth } from "../context/AuthContext";
 import BrandLogo from "./BrandLogo";
 import useOnlineStatus from "../utils/useOnlineStatus";
 
+/* --------------------------------------------------------------------------
+   Utility function used by desktop navigation links.
+
+   NavLink automatically provides `isActive`.
+   When active, an additional CSS class is applied to highlight
+   the current page.
+---------------------------------------------------------------------------*/
 const navClass = ({ isActive }) =>
   `nav-link ${isActive ? "nav-link-active" : ""}`;
 
+/* --------------------------------------------------------------------------
+   Navigation configuration.
+
+   Keeping routes in a single array allows the navigation
+   to be rendered dynamically instead of duplicating JSX.
+---------------------------------------------------------------------------*/
 const NAV_LINKS = [
   { to: "/", label: "Home", end: true },
   { to: "/grocery", label: "Grocery" },
@@ -18,40 +67,112 @@ const NAV_LINKS = [
 ];
 
 const Header = () => {
+  /* ----------------------------------------------------------------------
+     React Router
+  ---------------------------------------------------------------------- */
+
+  // Navigate programmatically.
   const navigate = useNavigate();
+
+  // Current URL information.
   const location = useLocation();
+
+  /* ----------------------------------------------------------------------
+     Authentication Context
+  ---------------------------------------------------------------------- */
+
+  /*
+   * Provides:
+   * - Current authenticated user
+   * - Authentication state
+   * - Logout method
+   * - Loading state
+   */
   const { logout, isAuthenticated, isLoading, user } = useAuth();
+
+  /* ----------------------------------------------------------------------
+     Redux
+  ---------------------------------------------------------------------- */
+
+  // Current number of items inside the shopping cart.
   const { itemCount } = useSelector((state) => state.cart);
+
+  /* ----------------------------------------------------------------------
+     Custom Hooks
+  ---------------------------------------------------------------------- */
+
+  // Detect browser online/offline status.
   const onlineStatus = useOnlineStatus();
+
+  /* ----------------------------------------------------------------------
+     Local Component State
+  ---------------------------------------------------------------------- */
+
+  // Controls visibility of the mobile navigation drawer.
   const [menuOpen, setMenuOpen] = useState(false);
+
+  // Stores previous authentication state to avoid duplicate welcome toasts.
   const wasAuthenticatedRef = useRef(false);
 
+  /* ----------------------------------------------------------------------
+     Show a welcome toast only when authentication changes from
+     logged out → logged in.
+  ---------------------------------------------------------------------- */
   useEffect(() => {
     if (isAuthenticated && !wasAuthenticatedRef.current) {
       toast.success("Welcome back!");
     }
+
     wasAuthenticatedRef.current = isAuthenticated;
   }, [isAuthenticated]);
 
+  /* ----------------------------------------------------------------------
+     Helper Functions
+  ---------------------------------------------------------------------- */
+
+  // Close mobile navigation.
   const closeMenu = () => setMenuOpen(false);
 
+  /*
+   * Redirect user to Login page while remembering
+   * the page they originally intended to visit.
+   */
   const handleLogin = () => {
     closeMenu();
+
     const returnTo = location.pathname + location.search || "/";
-    navigate("/login", { state: { returnTo } });
+
+    navigate("/login", {
+      state: {
+        returnTo,
+      },
+    });
   };
 
+  /*
+   * Logout the user.
+   *
+   * If logout occurs during payment flow,
+   * redirect back to the home page.
+   */
   const handleLogout = () => {
     closeMenu();
+
     logout();
+
     toast.success("Logged out");
+
     if (location.pathname.startsWith("/payment")) {
       navigate("/");
     }
   };
 
+  /* ----------------------------------------------------------------------
+     Prevent body scrolling while mobile navigation is open.
+  ---------------------------------------------------------------------- */
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "";
+
     return () => {
       document.body.style.overflow = "";
     };
@@ -85,6 +206,11 @@ const Header = () => {
               {link.label}
             </NavLink>
           ))}
+          {isAuthenticated && (
+            <NavLink to="/orders" className={navClass}>
+              Orders
+            </NavLink>
+          )}
         </nav>
 
         <div className="flex items-center gap-2 sm:gap-3">
@@ -173,6 +299,19 @@ const Header = () => {
                   {link.label}
                 </NavLink>
               ))}
+              {isAuthenticated && (
+                <NavLink
+                  to="/orders"
+                  className={({ isActive }) =>
+                    `rounded-xl px-4 py-3 text-base font-medium ${
+                      isActive ? "bg-brand-50 text-brand-700" : "text-ink-700 hover:bg-ink-50"
+                    }`
+                  }
+                  onClick={closeMenu}
+                >
+                  Orders
+                </NavLink>
+              )}
             </div>
 
             <div className="mt-4 border-t border-ink-100 pt-4">

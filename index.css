@@ -1,75 +1,160 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* ==========================================================================
+   Tailwind CSS Entry Points
+   --------------------------------------------------------------------------
+   Loads Tailwind's base reset styles, custom component layer, and utilities.
+   ========================================================================== */
 
-@layer base {
-  html {
-    scroll-behavior: smooth;
-  }
-
-  body {
-    @apply font-sans text-ink-800 bg-ink-50 antialiased;
-  }
-
-  #root {
-    @apply min-h-screen;
-  }
-}
-
-@layer components {
-  .page-shell {
-    @apply min-h-[calc(100vh-12rem)] bg-ink-50;
-  }
-
-  .page-container {
-    @apply mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8;
-  }
-
-  .section-title {
-    @apply font-display text-3xl font-bold tracking-tight text-ink-900 sm:text-4xl;
-  }
-
-  .section-subtitle {
-    @apply mt-2 text-base text-ink-500;
-  }
-
-  .card-surface {
-    @apply rounded-2xl border border-ink-100 bg-white shadow-card;
-  }
-
-  .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-brand-gradient px-5 py-3 text-sm font-semibold text-white shadow-md transition-all duration-200 hover:scale-[1.02] hover:shadow-lg active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100;
-  }
-
-  .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-ink-200 bg-white px-5 py-3 text-sm font-semibold text-ink-700 transition-all duration-200 hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700;
-  }
-
-  .btn-ghost {
-    @apply inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium text-ink-600 transition-colors hover:bg-ink-100 hover:text-ink-900;
-  }
-
-  .input-field {
-    @apply w-full rounded-xl border border-ink-200 bg-white px-4 py-3 text-ink-800 outline-none transition-all placeholder:text-ink-400 focus:border-brand-400 focus:shadow-glow;
-  }
-
-  .filter-chip {
-    @apply rounded-full border border-ink-200 bg-white px-4 py-2 text-sm font-medium text-ink-600 transition-all hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700 active:scale-95;
-  }
-
-  .filter-chip-active {
-    @apply border-brand-500 bg-brand-500 text-white shadow-md hover:bg-brand-600 hover:text-white;
-  }
-
-  .nav-link {
-    @apply rounded-lg px-3 py-2 text-sm font-medium text-ink-600 transition-colors hover:bg-ink-100 hover:text-ink-900;
-  }
-
-  .nav-link-active {
-    @apply bg-brand-50 text-brand-700;
-  }
-
-  .badge-rating {
-    @apply inline-flex items-center gap-1 rounded-lg bg-emerald-500 px-2 py-0.5 text-xs font-bold text-white;
-  }
-}
+   @tailwind base;
+   @tailwind components;
+   @tailwind utilities;
+   
+   
+   /* ==========================================================================
+      Base Layer
+      --------------------------------------------------------------------------
+      Global styles applied to native HTML elements.
+      ========================================================================== */
+   
+   @layer base {
+   
+     /* Enable smooth scrolling for anchor links */
+     html {
+       scroll-behavior: smooth;
+     }
+   
+     /*
+      * Global application styles
+      *
+      * font-sans     -> Default application font
+      * text-ink-800  -> Default text color
+      * bg-ink-50     -> Default background
+      * antialiased   -> Better font rendering
+      */
+     body {
+       @apply font-sans text-ink-800 bg-ink-50 antialiased;
+     }
+   
+     /*
+      * React application's root container.
+      * Ensures the application occupies at least the full viewport height.
+      */
+     #root {
+       @apply min-h-screen;
+     }
+   }
+   
+   
+   /* ==========================================================================
+      Components Layer
+      --------------------------------------------------------------------------
+      Reusable semantic classes built using Tailwind utilities.
+      Keeps JSX clean and promotes consistency.
+      ========================================================================== */
+   
+   @layer components {
+   
+     /* ---------------------------------------------------------
+        Page Layout
+        --------------------------------------------------------- */
+   
+     /* Main page wrapper */
+     .page-shell {
+       @apply min-h-[calc(100vh-12rem)] bg-ink-50;
+     }
+   
+     /* Responsive centered content container */
+     .page-container {
+       @apply mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8;
+     }
+   
+     /* ---------------------------------------------------------
+        Typography
+        --------------------------------------------------------- */
+   
+     /* Large section heading */
+     .section-title {
+       @apply font-display text-3xl font-bold tracking-tight text-ink-900 sm:text-4xl;
+     }
+   
+     /* Supporting text below headings */
+     .section-subtitle {
+       @apply mt-2 text-base text-ink-500;
+     }
+   
+     /* ---------------------------------------------------------
+        Card Components
+        --------------------------------------------------------- */
+   
+     /* Standard application card */
+     .card-surface {
+       @apply rounded-2xl border border-ink-100 bg-white shadow-card;
+     }
+   
+     /* ---------------------------------------------------------
+        Buttons
+        --------------------------------------------------------- */
+   
+     /*
+      * Primary CTA button.
+      * Includes hover, active, and disabled states.
+      */
+     .btn-primary {
+       @apply inline-flex items-center justify-center gap-2 rounded-xl bg-brand-gradient px-5 py-3 text-sm font-semibold text-white shadow-md transition-all duration-200 hover:scale-[1.02] hover:shadow-lg active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100;
+     }
+   
+     /* Secondary outlined button */
+     .btn-secondary {
+       @apply inline-flex items-center justify-center gap-2 rounded-xl border border-ink-200 bg-white px-5 py-3 text-sm font-semibold text-ink-700 transition-all duration-200 hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700;
+     }
+   
+     /* Minimal button for menus/icons */
+     .btn-ghost {
+       @apply inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium text-ink-600 transition-colors hover:bg-ink-100 hover:text-ink-900;
+     }
+   
+     /* ---------------------------------------------------------
+        Form Controls
+        --------------------------------------------------------- */
+   
+     /* Standard input styling */
+     .input-field {
+       @apply w-full rounded-xl border border-ink-200 bg-white px-4 py-3 text-ink-800 outline-none transition-all placeholder:text-ink-400 focus:border-brand-400 focus:shadow-glow;
+     }
+   
+     /* ---------------------------------------------------------
+        Filter Chips
+        --------------------------------------------------------- */
+   
+     /* Default filter chip */
+     .filter-chip {
+       @apply rounded-full border border-ink-200 bg-white px-4 py-2 text-sm font-medium text-ink-600 transition-all hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700 active:scale-95;
+     }
+   
+     /* Selected filter chip */
+     .filter-chip-active {
+       @apply border-brand-500 bg-brand-500 text-white shadow-md hover:bg-brand-600 hover:text-white;
+     }
+   
+     /* ---------------------------------------------------------
+        Navigation
+        --------------------------------------------------------- */
+   
+     /* Navigation link */
+     .nav-link {
+       @apply rounded-lg px-3 py-2 text-sm font-medium text-ink-600 transition-colors hover:bg-ink-100 hover:text-ink-900;
+     }
+   
+     /* Active navigation link */
+     .nav-link-active {
+       @apply bg-brand-50 text-brand-700;
+     }
+   
+     /* ---------------------------------------------------------
+        Badge Components
+        --------------------------------------------------------- */
+   
+     /* Rating badge (e.g., restaurant ratings) */
+     .badge-rating {
+       @apply inline-flex items-center gap-1 rounded-lg bg-emerald-500 px-2 py-0.5 text-xs font-bold text-white;
+     }
+   }

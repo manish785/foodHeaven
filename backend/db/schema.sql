@@ -90,6 +90,20 @@ CREATE TABLE IF NOT EXISTS orders (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
+/* order_timeline: immutable status audit trail used by the order timeline API */
+CREATE TABLE IF NOT EXISTS order_timeline (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  order_id BIGINT NOT NULL,
+  status VARCHAR(20) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_order_timeline_order
+    FOREIGN KEY (order_id) REFERENCES orders(id)
+    ON DELETE CASCADE
+);
+
+CREATE INDEX idx_order_timeline_order_created
+  ON order_timeline(order_id, created_at, id);
+
 /* order_items: line items; snapshot item_name/price; RESTRICT delete on menu_item if referenced */
 CREATE TABLE IF NOT EXISTS order_items (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,

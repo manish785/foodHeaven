@@ -1,16 +1,11 @@
 import { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate, Link } from "react-router-dom";
-import axios from "axios";
 import toast from "react-hot-toast";
 
 import { useAuth } from "../../context/AuthContext";
 import { successPayment } from "../../redux/CartPage/action";
-import {
-  getConfirmPaymentUrl,
-  getCreateOrderUrl,
-} from "../../utils/constants";
-import { getApiAccessToken } from "../../utils/sessionAuth";
+import { placeOrder } from "../../services/ordersApi";
 import appStore from "../../utils/appStore";
 import { persistCart } from "../../utils/cartStorage";
 
@@ -68,42 +63,28 @@ const PaymentPage = () => {
     try {
       setIsProcessing(true);
 
-      const jwtToken = await getApiAccessToken();
-
-      const headers = {
-        Authorization: `Bearer ${jwtToken}`,
-        "Idempotency-Key": `order-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      };
-
-      const createOrderResponse = await axios.post(
-        getCreateOrderUrl(),
+      const idempotencyKey = `order-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const { order } = await placeOrder(
         {
           items: data.map((item) => ({
-            menuItemId: item.id,
+            menuItemId: Number(item.id),
             quantity: Number(item.productQuantity || 1),
           })),
-          deliveryAddress,
+          deliveryAddress: {
+            ...deliveryAddress,
+            email: user?.email || deliveryAddress.email,
+          },
           paymentMethod: method,
         },
-        { headers }
-      );
-
-      const order = createOrderResponse?.data?.data;
-
-      await axios.post(
-        getConfirmPaymentUrl(order.orderId),
-        {
-          status: "SUCCESS",
-          provider: "TWIGGY_MOCK_GATEWAY",
-        },
-        { headers }
+        idempotencyKey
       );
 
       dispatch(successPayment());
       toast.success("Payment successful!");
 
-      navigate("/payment/confirm", {
+      navigate(`/payment/confirm?orderId=${order.orderId}`, {
         state: {
+          orderId: order.orderId,
           orderNumber: order.orderNumber,
           totalAmount: order.totalAmount,
         },
@@ -224,6 +205,19 @@ const PaymentPage = () => {
               Order summary
             </h2>
             <p className="mt-1 text-sm text-ink-500">{itemCount} items</p>
+
+            <ul className="mt-4 space-y-2 border-t border-ink-100 pt-4 text-sm text-ink-600">
+              {data.map((item) => (
+                <li key={item.id} className="flex justify-between gap-3">
+                  <span>
+                    {item.name} × {item.productQuantity}
+                  </span>
+                  <span className="font-medium text-ink-800">
+                    ₹{item.price * item.productQuantity}
+                  </span>
+                </li>
+              ))}
+            </ul>
 
             <div className="mt-6 space-y-2 border-t border-ink-100 pt-4 text-sm">
               <p className="font-semibold text-ink-800">Deliver to</p>

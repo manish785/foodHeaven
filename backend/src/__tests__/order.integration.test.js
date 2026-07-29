@@ -73,5 +73,36 @@ describe("Order API integration", () => {
     expect(paymentResponse.statusCode).toBe(200);
     expect(paymentResponse.body.success).toBe(true);
     expect(paymentResponse.body.data.orderStatus).toBe("PAID");
+
+    const cancelResponse = await request(app)
+      .patch(`/api/v1/orders/${orderId}/cancel`)
+      .set("Authorization", buildAuthHeader());
+
+    expect(cancelResponse.statusCode).toBe(200);
+    expect(cancelResponse.body.data.status).toBe("CANCELLED");
+
+    const timelineResponse = await request(app)
+      .get(`/api/v1/orders/${orderId}/timeline`)
+      .set("Authorization", buildAuthHeader());
+
+    expect(timelineResponse.statusCode).toBe(200);
+    expect(timelineResponse.body.success).toBe(true);
+    expect(timelineResponse.body.data.orderId).toBe(orderId);
+    expect(timelineResponse.body.data.timeline).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ status: "PENDING" }),
+        expect.objectContaining({ status: "PAID" }),
+        expect.objectContaining({ status: "CANCELLED" }),
+      ])
+    );
+  });
+
+  it("returns 400 for a malformed timeline order id", async () => {
+    const response = await request(app)
+      .get("/api/v1/orders/not-an-id/timeline")
+      .set("Authorization", buildAuthHeader());
+
+    expect(response.statusCode).toBe(400);
+    expect(response.body.success).toBe(false);
   });
 });

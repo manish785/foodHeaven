@@ -59,6 +59,30 @@ export function getConfirmPaymentUrl(orderId) {
   return `${getApiBaseUrl()}/orders/${orderId}/payments`;
 }
 
+export function getOrdersHistoryUrl({ page = 1, limit = 10 } = {}) {
+  return `${getApiBaseUrl()}/orders/history?page=${page}&limit=${limit}`;
+}
+
+export function getOrderDetailsUrl(orderId) {
+  return `${getApiBaseUrl()}/orders/${orderId}`;
+}
+
+export function getOrderTimelineUrl(orderId) {
+  return `${getApiBaseUrl()}/orders/${orderId}/timeline`;
+}
+
+export function getCancelOrderUrl(orderId) {
+  return `${getApiBaseUrl()}/orders/${orderId}/cancel`;
+}
+
+export function getUpdateOrderStatusUrl(orderId) {
+  return `${getApiBaseUrl()}/orders/${orderId}/status`;
+}
+
+export function getDevTokenUrl() {
+  return `${getApiBaseUrl()}/auth/dev-token`;
+}
+
 export const GROCERY_URL =
   "https://cdn.dribbble.com/users/90631/screenshots/16812389/media/7afe0c556ede3387b72f21fe5cc60a57.png";
 

@@ -12,26 +12,33 @@
  *   connection check and before `runMigrations` from `config/migrate.js`.
  * - Manually: `node scripts/init-db.js` from the `backend/` folder (loads `backend/.env`).
  *
- * Safety: initialization runs only if the `restaurants` table is missing in `DB_NAME`.
- * Existing databases are left unchanged (returns `false`). Schema changes on live DBs are
- * handled by `config/migrate.js`, not by re-running these SQL files.
+ * Safety: initialization runs only if the `restaurants` table is missing or empty.
+ * Existing databases with data are left unchanged (returns `false`). Schema changes on
+ * live DBs are handled by `config/migrate.js`, not by re-running these SQL files.
  *
- * Requires `DB_NAME` (and other DB_* vars or `DATABASE_URL`) to match the database you intend
+ * Requires `DB_NAME` (MySQL) or `DATABASE_URL` (Postgres) to match the database you intend
  * to use; `schema.sql` also contains `CREATE DATABASE` / `USE` statements for local setup.
  */
 
-const fs = require("fs");
-const path = require("path");
+const fs = require("fs"); // Read schema.sql and seed.sql from disk
+const path = require("path"); // Resolve paths relative to this script's directory
 
 /**
- * Returns true if `restaurants` already exists in the configured database.
- * Used as a simple signal that schema.sql has been applied at least once.
+ * True when DATABASE_URL points at PostgreSQL (e.g. Render/Heroku deploys).
+ * Switches schema file and seed SQL conversion logic below.
  */
 const isPostgres = Boolean(
   process.env.DATABASE_URL && process.env.DATABASE_URL.startsWith("postgres")
 );
 
+/**
+ * Returns true if the `restaurants` table already exists in the configured database.
+ * Used as a simple signal that schema.sql has been applied at least once.
+ *
+ * @param {object} connection - Shared pool from `src/config/db.js`
+ */
 async function tableExists(connection) {
+  // Postgres uses a fixed `public` schema; MySQL scopes by DB_NAME
   const [rows] = isPostgres
     ? await connection.query(
         `SELECT COUNT(1) AS count
@@ -51,6 +58,9 @@ async function tableExists(connection) {
  * Reads a `.sql` file, splits it into statements, and executes each in order.
  * Splits on semicolon + newline (`;\n`) so multi-line statements stay intact.
  * Skips empty chunks and lines that are only SQL comments (`--`).
+ *
+ * @param {object} connection - Shared pool from `src/config/db.js`
+ * @param {string} filePath - Absolute path to a `.sql` file
  */
 async function runSqlFile(connection, filePath) {
   const sql = fs.readFileSync(filePath, "utf8");
@@ -65,10 +75,11 @@ async function runSqlFile(connection, filePath) {
 }
 
 /**
- * Applies `db/schema.sql` then `db/seed.sql` when the database looks empty.
+ * Removes block comments (`/* ... *\/`) and line comments (`-- ...`) from SQL text.
+ * Used before converting MySQL seed syntax to Postgres-compatible syntax.
  *
- * @param {import('mysql2/promise').Pool} pool - Shared MySQL pool from `src/config/db.js`
- * @returns {Promise<boolean>} `true` if schema+seed ran; `false` if already initialized
+ * @param {string} sql - Raw SQL string
+ * @returns {string} SQL with comments stripped
  */
 function stripSqlComments(sql) {
   return sql
@@ -78,6 +89,19 @@ function stripSqlComments(sql) {
     .join("\n");
 }
 
+/**
+ * Converts MySQL-flavoured seed.sql so it can run on PostgreSQL.
+ * Keeps a single seed file for both engines; transformations happen at runtime.
+ *
+ * Transformations:
+ * - Strip MySQL `USE foodheaven_db;` (Postgres selects DB via connection URL)
+ * - `JSON_ARRAY('a','b')` → `'["a","b"]'::jsonb`
+ * - MySQL truthy `1` for is_open → Postgres `TRUE`
+ * - `ON DUPLICATE KEY UPDATE` → `ON CONFLICT (id) DO UPDATE SET ...`
+ *
+ * @param {string} sql - Contents of `backend/db/seed.sql`
+ * @returns {string} Postgres-compatible seed SQL
+ */
 function convertMysqlSeedToPostgres(sql) {
   return stripSqlComments(sql)
     .replace(/USE foodheaven_db;\s*/g, "")
@@ -105,6 +129,18 @@ function convertMysqlSeedToPostgres(sql) {
     );
 }
 
+/**
+ * Applies `db/schema.sql` then `db/seed.sql` when the database looks empty.
+ *
+ * Flow:
+ * 1. Require DB_NAME on MySQL (Postgres uses DATABASE_URL only)
+ * 2. Skip if `restaurants` exists AND has rows (already initialized)
+ * 3. Run schema file only when the table is missing
+ * 4. Always run seed when table is missing or empty
+ *
+ * @param {object} pool - Shared pool from `src/config/db.js`
+ * @returns {Promise<boolean>} `true` if schema and/or seed ran; `false` if skipped
+ */
 async function initializeDatabaseIfEmpty(pool) {
   if (!isPostgres && !process.env.DB_NAME) {
     throw new Error("DB_NAME is required to initialize the database");
@@ -118,6 +154,7 @@ async function initializeDatabaseIfEmpty(pool) {
   );
   const restaurantCount = Number(countRows[0]?.count || 0);
 
+  // Database already has demo data — do not re-run schema or seed
   if (hasRestaurants && restaurantCount > 0) {
     return false;
   }

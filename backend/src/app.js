@@ -124,6 +124,12 @@ app.get("/api/docs", (req, res) => {
       "/api/v1/orders/{orderId}/payments": {
         post: { summary: "Confirm payment", security: [{ bearerAuth: [] }] },
       },
+      "/api/v1/orders/{id}/timeline": {
+        get: { summary: "Get chronological order status timeline", security: [{ bearerAuth: [] }] },
+      },
+      "/api/v1/orders/{id}/cancel": {
+        patch: { summary: "Cancel an order before it is out for delivery", security: [{ bearerAuth: [] }] },
+      },
     },
   });
 });
