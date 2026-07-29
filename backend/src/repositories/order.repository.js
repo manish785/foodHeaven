@@ -17,6 +17,11 @@
 
 const pool = require("../config/db");
 const { mapMenuItemRow } = require("./rowMappers");
+const {
+  normalizeOrderItem,
+  normalizeOrderSummary,
+  normalizeTimelineEvent,
+} = require("../utils/rowFields");
 
 // Postgres uses TRUE; MySQL uses 1 for is_active checks
 const activeFilter = pool.isPostgres ? "TRUE" : "1";
@@ -193,7 +198,7 @@ async function findOrderByIdempotencyKey(connection, idempotencyKey) {
     }
     return null;
   }
-  return rows[0] || null;
+  return normalizeOrderSummary(rows[0] || null);
 }
 
 /**
@@ -279,7 +284,7 @@ async function findOrderTimeline(connection, orderId) {
      LIMIT 1`,
     [orderId]
   );
-  const order = orderRows[0];
+  const order = normalizeOrderSummary(orderRows[0]);
   if (!order) return null;
 
   const [timeline] = await connection.query(
@@ -290,14 +295,16 @@ async function findOrderTimeline(connection, orderId) {
     [orderId]
   );
 
+  const normalizedTimeline = timeline.map(normalizeTimelineEvent);
+
   // Orders created before this table was introduced still have a useful timeline.
   return {
     orderId: order.id,
     orderNumber: order.orderNumber,
     customerEmail: order.customerEmail,
     currentStatus: order.status,
-    timeline: timeline.length
-      ? timeline
+    timeline: normalizedTimeline.length
+      ? normalizedTimeline
       : [{ status: order.status, occurredAt: order.createdAt }],
   };
 }
@@ -322,7 +329,7 @@ async function findOrderById(connection, id, { forUpdate = false } = {}) {
      LIMIT 1${forUpdate ? " FOR UPDATE" : ""}`,
     [id]
   );
-  return rows[0] || null;
+  return normalizeOrderSummary(rows[0] || null);
 }
 
 /**
@@ -380,7 +387,7 @@ async function findOrdersByEmail(
     [email, limit, offset]
   );
 
-  return rows;
+  return rows.map(normalizeOrderSummary);
 }
 
 async function getOrdersCount(connection, email) {
@@ -419,7 +426,7 @@ async function getOrderDetails(connection, orderId) {
     [orderId]
   );
 
-  const order = orderRows[0];
+  const order = normalizeOrderSummary(orderRows[0]);
   if (!order) {
     return null;
   }
@@ -437,7 +444,7 @@ async function getOrderDetails(connection, orderId) {
     [orderId]
   );
 
-  return { ...order, items: itemRows };
+  return { ...order, items: itemRows.map(normalizeOrderItem) };
 }
 
 module.exports = {
