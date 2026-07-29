@@ -81,6 +81,8 @@ Config reference (Docker, `.env`, Jest): [docs/PROJECT_CONFIG.md](docs/PROJECT_C
 
 ## Production
 
+**Cheapest permanent setup ($0):** [docs/NEON_PRODUCTION_SETUP.md](docs/NEON_PRODUCTION_SETUP.md) — Neon Postgres + Render API + Vercel frontend.
+
 See [docs/production-deploy.md](docs/production-deploy.md) for Auth0, env vars, and deployment checklist.
 
 ## Deploy to Render + Vercel

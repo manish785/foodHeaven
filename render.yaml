@@ -1,12 +1,8 @@
-# FoodHeaven — Render Blueprint
-# Sync after push: Render Dashboard → Blueprint → Manual Sync
+# FoodHeaven — Render Blueprint (cheapest permanent production)
+#
+# Database: Neon Postgres (free, does not expire like Render free Postgres)
+# Set DATABASE_URL on foodheaven-api after creating Neon — see docs/NEON_PRODUCTION_SETUP.md
 # https://dashboard.render.com/blueprints
-
-databases:
-  - name: foodheaven-db
-    plan: free
-    databaseName: foodheaven
-    user: foodheaven
 
 services:
   # Backend API (Node)
@@ -38,9 +34,7 @@ services:
       - key: CORS_ORIGIN
         value: https://foodheaven-five.vercel.app
       - key: DATABASE_URL
-        fromDatabase:
-          name: foodheaven-db
-          property: connectionString
+        sync: false
       - key: AUTH0_DOMAIN
         sync: false
       - key: AUTH0_AUDIENCE

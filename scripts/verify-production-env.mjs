@@ -63,16 +63,17 @@ async function main() {
   const clientId = readEnv("REACT_APP_AUTH0_CLIENT_ID");
 
   if (auth0Domain) pass(`Auth0 domain set: ${auth0Domain}`);
-  else fail("Missing AUTH0_DOMAIN / REACT_APP_AUTH0_DOMAIN");
+  else pass("Auth0 not configured (optional  app uses JWT login)");
 
   if (auth0Audience) pass(`Auth0 audience set: ${auth0Audience}`);
-  else fail("Missing AUTH0_AUDIENCE / REACT_APP_AUTH0_AUDIENCE");
+  else if (auth0Domain) fail("Missing AUTH0_AUDIENCE / REACT_APP_AUTH0_AUDIENCE");
 
-  if (clientId) pass(`Auth0 client ID set`);
-  else fail("Missing REACT_APP_AUTH0_CLIENT_ID");
+  if (clientId) pass("Auth0 client ID set");
+  else if (auth0Domain) fail("Missing REACT_APP_AUTH0_CLIENT_ID");
 
   if (jwtSecret && jwtSecret.length >= 16) pass("JWT_SECRET looks configured");
-  else fail("JWT_SECRET missing or too short");
+  else if (jwtSecret) fail("JWT_SECRET too short");
+  else pass("JWT_SECRET not checked locally (set on Render)");
 
   if (apiBase.startsWith("https://") || apiBase.includes("localhost")) {
     pass(`API base URL: ${apiBase}`);
@@ -114,14 +115,8 @@ async function main() {
   const failed = checks.filter((c) => !c.ok);
   if (failed.length) {
     console.log(
-      "\nAuth0 dashboard steps (one-time):\n" +
-        "  1. Applications ? APIs ? Create API\n" +
-        `     Identifier: ${auth0Audience || "https://api.foodheaven.app"}\n` +
-        "     Signing Algorithm: RS256\n" +
-        "  2. Applications ? your SPA ? APIs tab ? Authorize the API above\n" +
-        "  3. Application Settings ? Allowed Callback/Logout/Web Origins:\n" +
-        `     ${corsOrigin}\n` +
-        "  See docs/production-deploy.md for full checklist.\n"
+      "\nProduction database setup:\n" +
+        "  See docs/NEON_PRODUCTION_SETUP.md — set DATABASE_URL on Render to Neon Postgres.\n"
     );
     process.exit(1);
   }

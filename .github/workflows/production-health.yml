@@ -1,0 +1,23 @@
+# Daily production health check — fails if API or Neon DB is down.
+name: Production Health
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Check API and database
+        run: npm run verify:health
+        env:
+          REACT_APP_API_BASE_URL: https://foodheaven-api.onrender.com/api/v1
+          HEALTH_TIMEOUT_MS: 120000

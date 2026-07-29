@@ -7,7 +7,8 @@
     "start": "parcel index.html",
     "build": "parcel build index.html",
     "watch-test": "jest --watch",
-    "verify:env": "node scripts/verify-production-env.mjs"
+    "verify:env": "node scripts/verify-production-env.mjs",
+    "verify:health": "node scripts/check-production-health.mjs"
   },
   "license": "ISC",
   "devDependencies": {
