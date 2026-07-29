@@ -1,8 +1,15 @@
-# Two services: static frontend + Node API
-# https://dashboard.render.com/blueprint/new?repo=https://github.com/manish785/foodHeaven
+# FoodHeaven — Render Blueprint
+# Sync after push: Render Dashboard → Blueprint → Manual Sync
+# https://dashboard.render.com/blueprints
+
+databases:
+  - name: foodheaven-db
+    plan: free
+    databaseName: foodheaven
+    user: foodheaven
 
 services:
-  # ?? Backend API (Node) ?????????????????????????????????????????????
+  # Backend API (Node)
   - type: web
     name: foodheaven-api
     runtime: node
@@ -21,7 +28,7 @@ services:
       - key: INTERNAL_API_TOKEN
         generateValue: true
       - key: JWT_EXPIRES_IN
-        value: 1h
+        value: 7d
       - key: RATE_LIMIT_WINDOW_MS
         value: 60000
       - key: RATE_LIMIT_MAX_REQUESTS
@@ -29,25 +36,17 @@ services:
       - key: LOG_LEVEL
         value: info
       - key: CORS_ORIGIN
-        sync: false
+        value: https://foodheaven-five.vercel.app
+      - key: DATABASE_URL
+        fromDatabase:
+          name: foodheaven-db
+          property: connectionString
       - key: AUTH0_DOMAIN
         sync: false
       - key: AUTH0_AUDIENCE
         sync: false
-      - key: DATABASE_URL
-        sync: false
-      - key: DB_HOST
-        sync: false
-      - key: DB_PORT
-        sync: false
-      - key: DB_USER
-        sync: false
-      - key: DB_PASSWORD
-        sync: false
-      - key: DB_NAME
-        sync: false
 
-  # ?? Frontend (static build � NOT parcel dev server) ????????????????
+  # Frontend (static build — NOT parcel dev server)
   - type: web
     name: foodheaven-web
     runtime: static
@@ -59,7 +58,7 @@ services:
         destination: /index.html
     envVars:
       - key: REACT_APP_API_BASE_URL
-        sync: false
+        value: https://foodheaven-api.onrender.com/api/v1
       - key: REACT_APP_AUTH0_DOMAIN
         sync: false
       - key: REACT_APP_AUTH0_CLIENT_ID
